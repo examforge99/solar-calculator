@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Solar Quote Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #20232f;
+      --border: #2e3142;
+      --accent: #f5a623;
+      --accent2: #4ade80;
+      --text: #e8eaf0;
+      --muted: #7b7f94;
+      --danger: #f87171;
+      --blue: #60a5fa;
+      --whatsapp: #25d366;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px env(safe-area-inset-bottom, 16px);
+    }
+
+    h1 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .subtitle { font-size: 0.78rem; color: var(--muted); margin-bottom: 24px; }
+
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    .field { margin-bottom: 13px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 0.77rem; color: var(--muted); margin-bottom: 6px; }
+
+    input, select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.93rem;
+      padding: 10px 12px;
+      outline: none;
+      appearance: none;
+    }
+
+    input:focus, select:focus { border-color: var(--accent); }
+
+    .tier-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tier-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tier-btn.active {
+      border-color: var(--accent);
+      background: #f5a62318;
+      color: var(--accent);
+    }
+
+    .tier-btn .tier-name { font-size: 0.85rem; font-weight: 700; display: block; }
+    .tier-btn .tier-sub { font-size: 0.68rem; margin-top: 2px; display: block; }
+
+    .hint-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .hint-box span { color: var(--text); font-weight: 600; }
+    .hint-box.info { border-color: var(--blue); }
+    .hint-box.info span { color: var(--blue); }
+
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; }
+
+    .material-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .material-row input { flex: 1; }
+    .material-row input:first-child { flex: 2; }
+
+    .remove-btn {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 6px;
+      width: 30px;
+      height: 38px;
+      font-size: 1rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .add-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .value-scale { display: flex; gap: 4px; margin-bottom: 10px; }
+    .scale-bar {
+      height: 6px; flex: 1; border-radius: 3px;
+      background: var(--border); transition: background 0.3s;
+    }
+    .scale-bar.lit { background: var(--accent); }
+    .scale-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.7rem; color: var(--muted); margin-bottom: 14px;
+    }
+
+    .profit-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.82rem;
+    }
+    .profit-row .p-label { color: var(--muted); }
+    .profit-row .p-value { color: var(--accent); font-weight: 700; }
+
+    .calc-btn {
+      width: 100%; background: var(--accent); border: none;
+      border-radius: 10px; color: #0f1117; font-size: 1rem;
+      font-weight: 700; padding: 14px; cursor: pointer; margin-bottom: 14px;
+    }
+
+    .result-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; display: none;
+    }
+    .result-card.visible { display: block; }
+
+    .result-header {
+      background: var(--surface); padding: 12px 16px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 0.87rem;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row .label { color: var(--muted); flex: 1; }
+    .result-row .value { font-weight: 600; text-align: right; }
+    .result-row .sub { font-size: 0.72rem; color: var(--muted); display: block; }
+    .result-row.highlight { background: #f5a62312; }
+    .result-row.highlight .label { color: var(--text); font-weight: 600; }
+    .result-row.highlight .value { color: var(--accent); font-size: 1.05rem; }
+    .result-row.green .value { color: var(--accent2); }
+    .result-row.blue .value { color: var(--blue); }
+
+    .section-sub {
+      padding: 8px 16px; background: #f5a62308;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bucket-section {
+      padding: 14px 16px; border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .bucket-title {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px;
+    }
+    .bucket-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.83rem; margin-bottom: 8px;
+    }
+    .bucket-row .b-label { color: var(--muted); }
+    .bucket-row .b-value { font-weight: 600; color: var(--accent2); }
+
+    .upfront-wrap {
+      padding: 14px 16px; border-top: 1px solid var(--border); text-align: center;
+    }
+    .upfront-badge {
+      display: inline-block; background: #f5a62322; border: 1px solid var(--accent);
+      color: var(--accent); font-size: 0.8rem; font-weight: 700;
+      border-radius: 20px; padding: 7px 18px; margin-top: 6px;
+    }
+
+    /* Share section */
+    .share-section {
+      padding: 14px 16px; border-top: 1px solid var(--border);
+    }
+
+    .share-title {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px;
+    }
+
+    .share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .share-btn {
+      border: none; border-radius: 10px; padding: 12px 8px;
+      font-size: 0.82rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: opacity 0.2s;
+    }
+    .share-btn:active { opacity: 0.8; }
+
+    .btn-whatsapp { background: var(--whatsapp); color: #fff; }
+    .btn-copy     { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-sms      { background: var(--blue); color: #fff; }
+    .btn-download { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); }
+
+    .share-btn.full { grid-column: 1 / -1; }
+
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--accent2); color: #0f1117; font-size: 0.82rem; font-weight: 700;
+      padding: 10px 20px; border-radius: 20px; opacity: 0;
+      transition: all 0.3s; pointer-events: none; z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .profit-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      border-radius: 6px; padding: 2px 8px; margin-left: 6px;
+    }
+    .pb-low  { background: #4ade8022; color: var(--accent2); }
+    .pb-mid  { background: #f5a62322; color: var(--accent); }
+    .pb-high { background: #60a5fa22; color: var(--blue); }
+
+    .client-field {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;
+    }
+    .client-field input {
+      background: transparent; border: none; padding: 0;
+      font-size: 0.88rem; color: var(--text);
+    }
+    .client-field label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Solar Quote Calculator</h1>
+  <p class="subtitle">Elite Solution Tech World — value-based pricing</p>
+
+  <!-- Client Info -->
+  <div class="section">
+    <div class="section-title">Client Info (for quote)</div>
+    <div class="field">
+      <label>Client Name</label>
+      <input type="text" id="clientName" placeholder="e.g. Mr Bello" />
+    </div>
+    <div class="field">
+      <label>Location / Area</label>
+      <input type="text" id="clientLocation" placeholder="e.g. Ibadan, Oyo" />
+    </div>
+  </div>
+
+  <!-- System Tier -->
+  <div class="section">
+    <div class="section-title">System Size</div>
+    <div class="tier-grid">
+      <div class="tier-btn active" onclick="selectTier(this, 'micro')">
+        <span class="tier-name">Micro</span>
+        <span class="tier-sub">≤ 500W</span>
+      </div>
+      <div class="tier-btn" onclick="selectTier(this, 'small')">
+        <span class="tier-name">Small</span>
+        <span class="tier-sub">500W – 1kW</span>
+      </div>
+      <div class="tier-btn" onclick="selectTier(this, 'medium')">
+        <span class="tier-name">Medium</span>
+        <span class="tier-sub">1kW – 3kW</span>
+      </div>
+      <div class="tier-btn" onclick="selectTier(this, 'large')">
+        <span class="tier-name">Large</span>
+        <span class="tier-sub">3kW – 5kW+</span>
+      </div>
+    </div>
+    <div class="hint-box" id="tier-hint">
+      <span>Micro (≤500W):</span> 1 panel, small battery, simple wiring. 1 day solo job.
+    </div>
+  </div>
+
+  <!-- Labour -->
+  <div class="section">
+    <div class="section-title">Labour</div>
+    <div class="row">
+      <div class="field">
+        <label>Your Daily Rate (₦)</label>
+        <input type="number" id="dailyRate" placeholder="e.g. 15000" oninput="liveUpdate()" />
+      </div>
+      <div class="field">
+        <label>Days on Site</label>
+        <input type="number" id="days" placeholder="e.g. 2" oninput="liveUpdate()" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Helper(s) Total Cost (₦)</label>
+      <input type="number" id="helperCost" placeholder="0 if solo" oninput="liveUpdate()" />
+    </div>
+    <div class="field">
+      <label>Transport / Travel (₦)</label>
+      <input type="number" id="transport" placeholder="e.g. 2000" oninput="liveUpdate()" />
+    </div>
+    <div class="field">
+      <label>Complexity Surcharge</label>
+      <select id="complexity" onchange="liveUpdate()">
+        <option value="0">Standard — flat roof, short runs</option>
+        <option value="8">+8% Moderate — high roof, 2 floors</option>
+        <option value="15">+15% Complex — steep roof, DB work</option>
+        <option value="25">+25% Very Complex — rewire, bypass, 3+ floors</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Materials -->
+  <div class="section">
+    <div class="section-title">Materials</div>
+    <div id="materials-list"></div>
+    <button class="add-btn" onclick="addMaterial()">+ Add Material Item</button>
+    <div style="margin-top: 14px;">
+      <div class="hint-box info" id="mat-total-hint">
+        Material total: <span>₦0</span> — add items above
+      </div>
+    </div>
+    <div class="field" style="margin-top: 10px;">
+      <label>Base Markup on Materials (%)</label>
+      <input type="number" id="markup" value="20" oninput="liveUpdate()" />
+    </div>
+    <div style="margin-top: 12px;">
+      <label style="margin-bottom: 8px;">Material Value Tier</label>
+      <div class="value-scale" id="value-scale">
+        <div class="scale-bar"></div>
+        <div class="scale-bar"></div>
+        <div class="scale-bar"></div>
+        <div class="scale-bar"></div>
+        <div class="scale-bar"></div>
+      </div>
+      <div class="scale-label">
+        <span>Budget</span><span>Mid</span><span>Premium</span>
+        <span>High-Value</span><span>Enterprise</span>
+      </div>
+    </div>
+    <div class="profit-row">
+      <span class="p-label">Effective markup being applied</span>
+      <span class="p-value" id="effective-markup">20%</span>
+    </div>
+  </div>
+
+  <!-- Labour Value Premium -->
+  <div class="section">
+    <div class="section-title">Labour Value Premium</div>
+    <div class="hint-box info">
+      <span>Why this matters:</span> Same 2 days on a ₦5M system vs ₦800k — bigger job, more risk, more expertise. This scales your labour accordingly.
+    </div>
+    <div class="field">
+      <label>Labour Value Premium (%)</label>
+      <select id="labourPremium" onchange="liveUpdate()">
+        <option value="0">None — standard rate only</option>
+        <option value="10">+10% — mid-range system (₦500k–₦1.5M)</option>
+        <option value="20" selected>+20% — premium system (₦1.5M–₦3M)</option>
+        <option value="35">+35% — high-value system (₦3M–₦6M)</option>
+        <option value="50">+50% — enterprise system (₦6M+)</option>
+      </select>
+    </div>
+    <div class="profit-row">
+      <span class="p-label">Labour premium amount</span>
+      <span class="p-value" id="labour-premium-val">₦0</span>
+    </div>
+  </div>
+
+  <!-- Buffer & Deposit -->
+  <div class="section">
+    <div class="section-title">Buffer & Deposit</div>
+    <div class="row">
+      <div class="field">
+        <label>Risk Buffer (%)</label>
+        <input type="number" id="riskBuffer" value="10" oninput="liveUpdate()" />
+      </div>
+      <div class="field">
+        <label>Upfront Deposit (%)</label>
+        <input type="number" id="depositPct" value="60" oninput="liveUpdate()" />
+      </div>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">Calculate Quote</button>
+
+  <!-- Result -->
+  <div class="result-card" id="result">
+    <div class="result-header" id="result-header">Full Breakdown</div>
+
+    <div class="section-sub">Labour & Site</div>
+    <div class="result-row">
+      <span class="label">Base Labour</span>
+      <span class="value" id="r-labour">—</span>
+    </div>
+    <div class="result-row blue">
+      <span class="label">
+        Labour Value Premium
+        <span class="sub">Scaled for system responsibility</span>
+      </span>
+      <span class="value" id="r-labour-premium">—</span>
+    </div>
+    <div class="result-row">
+      <span class="label">Helper(s)</span>
+      <span class="value" id="r-helper">—</span>
+    </div>
+    <div class="result-row">
+      <span class="label">Transport</span>
+      <span class="value" id="r-transport">—</span>
+    </div>
+    <div class="result-row">
+      <span class="label">Complexity Surcharge</span>
+      <span class="value" id="r-complexity">—</span>
+    </div>
+
+    <div class="section-sub">Materials</div>
+    <div class="result-row">
+      <span class="label">Materials (your cost)</span>
+      <span class="value" id="r-matcost">—</span>
+    </div>
+    <div class="result-row green">
+      <span class="label">
+        Markup Profit Earned
+        <span class="sub" id="r-markup-sub">—</span>
+      </span>
+      <span class="value" id="r-markupearned">—</span>
+    </div>
+    <div class="result-row green">
+      <span class="label">Materials (charged to client)</span>
+      <span class="value" id="r-matcharge">—</span>
+    </div>
+
+    <div class="section-sub">Totals</div>
+    <div class="result-row">
+      <span class="label">Risk Buffer</span>
+      <span class="value" id="r-risk">—</span>
+    </div>
+    <div class="result-row highlight">
+      <span class="label">Total Quote to Client</span>
+      <span class="value" id="r-total">—</span>
+    </div>
+    <div class="result-row green">
+      <span class="label">
+        Your Total Profit
+        <span class="sub" id="r-profit-sub">—</span>
+      </span>
+      <span class="value" id="r-profit">—</span>
+    </div>
+
+    <div class="bucket-section">
+      <div class="bucket-title">How to split what stays with you</div>
+      <div class="bucket-row">
+        <span class="b-label">Take-home pay (65%)</span>
+        <span class="b-value" id="b-takehome">—</span>
+      </div>
+      <div class="bucket-row">
+        <span class="b-label">Reinvestment — tools, stock (15%)</span>
+        <span class="b-value" id="b-reinvest">—</span>
+      </div>
+      <div class="bucket-row">
+        <span class="b-label">Emergency / savings (20%)</span>
+        <span class="b-value" id="b-savings">—</span>
+      </div>
+    </div>
+
+    <div class="upfront-wrap">
+      <div style="font-size: 0.78rem; color: var(--muted);">Collect before buying a single component</div>
+      <div class="upfront-badge" id="r-deposit">—</div>
+    </div>
+
+    <!-- Share Section -->
+    <div class="share-section">
+      <div class="share-title">Send Quote to Client</div>
+      <div class="share-grid">
+        <button class="share-btn btn-whatsapp" onclick="shareWhatsApp()">
+          💬 WhatsApp
+        </button>
+        <button class="share-btn btn-copy" onclick="copyQuote()">
+          📋 Copy Text
+        </button>
+        <button class="share-btn btn-sms" onclick="shareSMS()">
+          📱 SMS
+        </button>
+        <button class="share-btn btn-download" onclick="downloadQuote()">
+          💾 Save .txt
+        </button>
+        <button class="share-btn btn-copy full" onclick="shareNative()" id="native-share-btn" style="display:none; background: var(--accent); color: #0f1117;">
+          ↑ Share via...
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    const TIERS = {
+      micro:  { hint: '<span>Micro (≤500W):</span> 1 panel, small battery, simple wiring. 1 day solo job.', days: 1, rate: 10000 },
+      small:  { hint: '<span>Small (500W–1kW):</span> 1–2 panels, medium battery, basic inverter. 1–2 days.', days: 1, rate: 12000 },
+      medium: { hint: '<span>Medium (1kW–3kW):</span> 2–6 panels, inverter + batteries, full wiring. 2–3 days.', days: 2, rate: 15000 },
+      large:  { hint: '<span>Large (3kW–5kW+):</span> 6+ panels, heavy batteries, DB integration. 3–5 days.', days: 3, rate: 20000 }
+    };
+
+    const TIER_LABELS = {
+      micro: 'Micro ≤500W', small: 'Small 500W–1kW',
+      medium: 'Medium 1kW–3kW', large: 'Large 3kW–5kW+'
+    };
+
+    let currentTier = 'micro';
+    let matCount = 0;
+    let lastQuote = null;
+
+    function selectTier(el, tier) {
+      document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      currentTier = tier;
+      document.getElementById('tier-hint').innerHTML = TIERS[tier].hint;
+      const daysEl = document.getElementById('days');
+      const rateEl = document.getElementById('dailyRate');
+      if (!daysEl.value) daysEl.value = TIERS[tier].days;
+      if (!rateEl.value) rateEl.value = TIERS[tier].rate;
+      liveUpdate();
+    }
+
+
+    function addMaterial() {
+      matCount++;
+      const id = matCount;
+      const div = document.createElement('div');
+      div.className = 'material-row';
+      div.id = 'mat-' + id;
+      div.innerHTML = `
+        <input type="text" placeholder="Item (e.g. 200Ah battery)" id="mat-name-${id}" />
+        <input type="number" placeholder="Cost (₦)" id="mat-cost-${id}" oninput="liveUpdate()" />
+        <button class="remove-btn" onclick="removeMaterial(${id})">×</button>
+      `;
+      document.getElementById('materials-list').appendChild(div);
+    }
+
+    function removeMaterial(id) {
+      const el = document.getElementById('mat-' + id);
+      if (el) { el.remove(); liveUpdate(); }
+    }
+
+    function fmt(n) {
+      return '₦' + Math.round(n).toLocaleString('en-NG');
+    }
+
+    function getTotalMaterials() {
+      let total = 0;
+      document.querySelectorAll('.material-row').forEach(row => {
+        const id = row.id.replace('mat-', '');
+        total += parseFloat(document.getElementById('mat-cost-' + id)?.value) || 0;
+      });
+      return total;
+    }
+
+    function getMaterialItems() {
+      const items = [];
+      document.querySelectorAll('.material-row').forEach(row => {
+        const id = row.id.replace('mat-', '');
+        const name = document.getElementById('mat-name-' + id)?.value || '';
+        const cost = parseFloat(document.getElementById('mat-cost-' + id)?.value) || 0;
+        if (name || cost) items.push({ name: name || 'Item', cost });
+      });
+      return items;
+    }
+
+    function getEffectiveMarkup(basePct, matCost) {
+      let uplift = 0;
+      if (matCost >= 500000)  uplift += 2;
+      if (matCost >= 1000000) uplift += 3;
+      if (matCost >= 2000000) uplift += 3;
+      if (matCost >= 3500000) uplift += 3;
+      if (matCost >= 6000000) uplift += 4;
+      return basePct + uplift;
+    }
+
+    function updateScaleBars(matCost) {
+      const bars = document.querySelectorAll('.scale-bar');
+      const thresholds = [0, 500000, 1500000, 3500000, 6000000];
+      bars.forEach((bar, i) => bar.classList.toggle('lit', matCost >= thresholds[i]));
+    }
+
+    function liveUpdate() {
+      const matCost = getTotalMaterials();
+      const basePct = parseFloat(document.getElementById('markup').value) || 0;
+      const effectivePct = getEffectiveMarkup(basePct, matCost);
+      const dailyRate = parseFloat(document.getElementById('dailyRate').value) || 0;
+      const days = parseFloat(document.getElementById('days').value) || 0;
+      const labour = dailyRate * days;
+      const labourPremiumPct = parseFloat(document.getElementById('labourPremium').value) || 0;
+      const labourPremium = labour * (labourPremiumPct / 100);
+
+      document.getElementById('mat-total-hint').innerHTML =
+        `Material total: <span>${fmt(matCost)}</span>`;
+      document.getElementById('effective-markup').textContent = effectivePct + '%';
+      document.getElementById('labour-premium-val').textContent = fmt(labourPremium);
+      updateScaleBars(matCost);
+    }
+
+    function calculate() {
+      const dailyRate        = parseFloat(document.getElementById('dailyRate').value) || 0;
+      const days             = parseFloat(document.getElementById('days').value) || 0;
+      const helperCost       = parseFloat(document.getElementById('helperCost').value) || 0;
+      const transport        = parseFloat(document.getElementById('transport').value) || 0;
+      const complexityPct    = parseFloat(document.getElementById('complexity').value) || 0;
+      const basePct          = parseFloat(document.getElementById('markup').value) || 0;
+      const riskPct          = parseFloat(document.getElementById('riskBuffer').value) || 0;
+      const depositPct       = parseFloat(document.getElementById('depositPct').value) || 0;
+      const labourPremiumPct = parseFloat(document.getElementById('labourPremium').value) || 0;
+      const clientName       = document.getElementById('clientName').value.trim() || 'Client';
+      const clientLocation   = document.getElementById('clientLocation').value.trim();
+
+      const matCost       = getTotalMaterials();
+      const effectivePct  = getEffectiveMarkup(basePct, matCost);
+      const matItems      = getMaterialItems();
+
+      const labour              = dailyRate * days;
+      const labourPremium       = labour * (labourPremiumPct / 100);
+      const complexitySurcharge = (labour + labourPremium) * (complexityPct / 100);
+      const totalLabour         = labour + labourPremium + helperCost + transport + complexitySurcharge;
+      const matCharge           = matCost * (1 + effectivePct / 100);
+      const markupEarned        = matCharge - matCost;
+      const riskAmount          = totalLabour * (riskPct / 100);
+      const total               = totalLabour + matCharge + riskAmount;
+      const deposit             = total * (depositPct / 100);
+      const totalProfit         = labour + labourPremium + complexitySurcharge + markupEarned + riskAmount;
+      const profitMarginPct     = total > 0 ? ((totalProfit / total) * 100).toFixed(1) : 0;
+      const takehome            = totalProfit * 0.65;
+      const reinvest            = totalProfit * 0.15;
+      const savings             = totalProfit * 0.20;
+      const complexityText      = document.getElementById('complexity').selectedOptions[0].text.split('—')[0].trim();
+
+      let badge = '';
+      if (matCost < 800000) badge = '<span class="profit-badge pb-low">Budget Job</span>';
+      else if (matCost < 3000000) badge = '<span class="profit-badge pb-mid">Mid-Range</span>';
+      else badge = '<span class="profit-badge pb-high">High-Value</span>';
+
+      document.getElementById('result-header').innerHTML =
+        `Breakdown — ${TIER_LABELS[currentTier]} ${badge}`;
+
+      document.getElementById('r-labour').textContent         = fmt(labour);
+      document.getElementById('r-labour-premium').textContent = labourPremium > 0 ? fmt(labourPremium) : '₦0 (none set)';
+      document.getElementById('r-helper').textContent         = fmt(helperCost);
+      document.getElementById('r-transport').textContent      = fmt(transport);
+      document.getElementById('r-complexity').textContent     = complexityPct > 0 ? `${fmt(complexitySurcharge)} (${complexityText})` : '₦0 (standard)';
+      document.getElementById('r-matcost').textContent        = fmt(matCost);
+      document.getElementById('r-markup-sub').textContent     = `${effectivePct}% effective (base ${basePct}% + value uplift)`;
+      document.getElementById('r-markupearned').textContent   = fmt(markupEarned);
+      document.getElementById('r-matcharge').textContent      = fmt(matCharge);
+      document.getElementById('r-risk').textContent           = fmt(riskAmount);
+      document.getElementById('r-total').textContent          = fmt(total);
+      document.getElementById('r-profit').textContent         = fmt(totalProfit);
+      document.getElementById('r-profit-sub').textContent     = `${profitMarginPct}% of total quote`;
+      document.getElementById('b-takehome').textContent       = fmt(takehome);
+      document.getElementById('b-reinvest').textContent       = fmt(reinvest);
+      document.getElementById('b-savings').textContent        = fmt(savings);
+      document.getElementById('r-deposit').textContent        =
+        `Collect ${depositPct}% upfront = ${fmt(deposit)}`;
+// Save quote data for sharing
+      lastQuote = {
+        clientName, clientLocation, tier: TIER_LABELS[currentTier],
+        labour, labourPremium, helperCost, transport, complexitySurcharge,
+        complexityText, matCost, matItems, effectivePct, markupEarned,
+        matCharge, riskAmount, total, deposit, depositPct, totalProfit,
+        profitMarginPct, takehome, reinvest, savings, date: new Date().toLocaleDateString('en-NG')
+      };
+
+      // Show native share if supported
+      if (navigator.share) {
+        document.getElementById('native-share-btn').style.display = 'flex';
+      }
+
+      document.getElementById('result').classList.add('visible');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function buildQuoteText(forClient = true) {
+      if (!lastQuote) return '';
+      const q = lastQuote;
+
+      // Client-facing version (clean, professional)
+      if (forClient) {
+        let matLines = '';
+        q.matItems.forEach(item => {
+          matLines += `  • ${item.name}: ${fmt(item.cost)}\n`;
+        });
+        if (!matLines) matLines = `  • Materials: ${fmt(q.matCost)}\n`;
+
+        return [
+          `⚡ SOLAR INSTALLATION QUOTE`,
+          `Elite Solution Tech World`,
+          `─────────────────────────`,
+          `Client: ${q.clientName}${q.clientLocation ? '\nLocation: ' + q.clientLocation : ''}`,
+          `Date: ${q.date}`,
+          `System: ${q.tier}`,
+          ``,
+          `📦 MATERIALS`,
+          matLines.trimEnd(),
+          ``,
+          `🔧 INSTALLATION`,
+          `  • Labour & Installation: ${fmt(q.labour + q.labourPremium)}`,
+          q.complexitySurcharge > 0 ? `  • Complexity surcharge: ${fmt(q.complexitySurcharge)}` : '',
+          q.helperCost > 0 ? `  • Additional personnel: ${fmt(q.helperCost)}` : '',
+          q.transport > 0 ? `  • Site transport: ${fmt(q.transport)}` : '',
+          ``,
+          `─────────────────────────`,
+          `💰 TOTAL: ${fmt(q.total)}`,
+          ``,
+          `📌 PAYMENT TERMS`,
+          `  • ${q.depositPct}% deposit required to begin: ${fmt(q.deposit)}`,
+          `  • Balance due on completion: ${fmt(q.total - q.deposit)}`,
+          ``,
+          `For enquiries, contact Elite Solution Tech World.`
+        ].filter(l => l !== '').join('\n');
+      }
+
+      // Internal version (shows your profit breakdown)
+      return [
+        `⚡ INTERNAL QUOTE SUMMARY`,
+        `${q.date} — ${q.clientName}${q.clientLocation ? ', ' + q.clientLocation : ''}`,
+        `System: ${q.tier}`,
+        `─────────────────────────`,
+        `Base Labour:       ${fmt(q.labour)}`,
+        `Labour Premium:    ${fmt(q.labourPremium)}`,
+        `Complexity:        ${fmt(q.complexitySurcharge)}`,
+        `Helpers:           ${fmt(q.helperCost)}`,
+        `Transport:         ${fmt(q.transport)}`,
+        `Materials cost:    ${fmt(q.matCost)}`,
+        `Markup earned:     ${fmt(q.markupEarned)} (${q.effectivePct}%)`,
+        `Risk buffer:       ${fmt(q.riskAmount)}`,
+        `─────────────────────────`,
+        `CLIENT TOTAL:      ${fmt(q.total)}`,
+        `YOUR PROFIT:       ${fmt(q.totalProfit)} (${q.profitMarginPct}%)`,
+        `─────────────────────────`,
+        `Take-home (65%):   ${fmt(q.takehome)}`,
+        `Reinvest (15%):    ${fmt(q.reinvest)}`,
+        `Savings (20%):     ${fmt(q.savings)}`,
+        `─────────────────────────`,
+        `Collect upfront (${q.depositPct}%): ${fmt(q.deposit)}`
+      ].join('\n');
+    }
+
+    function shareWhatsApp() {
+      if (!lastQuote) return;
+      const text = encodeURIComponent(buildQuoteText(true));
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+
+    function shareSMS() {
+      if (!lastQuote) return;
+      const text = encodeURIComponent(buildQuoteText(true));
+      window.open(`sms:?body=${text}`, '_blank');
+    }
+
+    function copyQuote() {
+      if (!lastQuote) return;
+      const text = buildQuoteText(true);
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Client quote copied!');
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Copied!');
+      });
+    }
+
+    function downloadQuote() {
+      if (!lastQuote) return;
+      const client = buildQuoteText(true);
+      const internal = buildQuoteText(false);
+      const full = `CLIENT QUOTE\n${'='.repeat(40)}\n${client}\n\n\nINTERNAL SUMMARY\n${'='.repeat(40)}\n${internal}`;
+      const blob = new Blob([full], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quote-${lastQuote.clientName.replace(/\s+/g, '-')}-${lastQuote.date.replace(/\//g, '-')}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Quote saved!');
+    }
+
+    function shareNative() {
+      if (!lastQuote || !navigator.share) return;
+      navigator.share({
+        title: `Solar Quote — ${lastQuote.clientName}`,
+        text: buildQuoteText(true)
+      }).catch(() => {});
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // Boot
+    addMaterial();
+    addMaterial();
+    liveUpdate();
+  </script>
+
+</body>
+</html>
